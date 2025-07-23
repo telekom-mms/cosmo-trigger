@@ -1,1 +1,1 @@
-# cosmo-trigger
+# CosmoTrigger
