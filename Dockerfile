@@ -5,7 +5,7 @@ FROM denoland/deno:alpine-2.4.2
 LABEL author="VaaS Team" \
       contact="staking@telekom-mms.com" \
       vendor="Telekom MMS GmbH" \
-      name="zetacored build image" \
+      name="CosmoTrigger" \
       description="Build image"
 
 # Arguments for user and group IDs and names
@@ -35,15 +35,10 @@ ENV APPLICATION_PORT="8000"
 # Matches Deno code: Deno.env.get("COSMOS_NODE_REST_URL") ?? ""
 ENV COSMOS_NODE_REST_URL=""
 
-# WARNING: CICD_TRIGGER_TOKEN is sensitive.
-# Defaulting to empty. MUST be provided via K8s Secret at runtime.
-# Matches Deno code: Deno.env.get("CICD_TRIGGER_TOKEN") ?? ""
-ENV CICD_TRIGGER_TOKEN=""
-
-# WARNING: CICD_PERSONAL_ACCESS_TOKEN is highly sensitive.
-# Defaulting to empty. MUST be provided via K8s Secret at runtime.
-# Matches Deno code: Deno.env.get("CICD_PERSONAL_ACCESS_TOKEN") ?? ""
-ENV CICD_PERSONAL_ACCESS_TOKEN=""
+# NOTE: Sensitive environment variables are expected at runtime:
+# - CICD_TRIGGER_TOKEN: Must be provided via K8s Secret at runtime
+# - CICD_PERSONAL_ACCESS_TOKEN: Must be provided via K8s Secret at runtime
+# These are intentionally NOT set in Dockerfile for security compliance.
 
 # Matches Deno code: Deno.env.get("CICD_REPOSITORY_BRANCH") ?? ""
 # Consider changing Deno code's default if "main" or similar is always preferred.
