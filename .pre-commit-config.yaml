@@ -1,0 +1,49 @@
+---
+repos:
+  - repo: local
+    hooks:
+      - id: commitizen
+        name: commitizen-check
+        entry: cz check --commit-msg-file
+        language: system
+        stages: [commit-msg]
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: "v5.0.0"
+    hooks:
+      - id: "check-case-conflict"
+      - id: "check-yaml"
+        exclude: |
+          (?x)(
+            ^charts/.*/helmfile\.yaml|
+            ^charts/.*/templates/
+          )
+      - id: "check-json"
+      - id: "check-shebang-scripts-are-executable"
+      - id: "detect-private-key"
+      - id: "end-of-file-fixer"
+      - id: "mixed-line-ending"
+      - id: "trailing-whitespace"
+  - repo: "https://github.com/adrienverge/yamllint.git"
+    rev: "v1.35.1"
+    hooks:
+      - id: "yamllint"
+        exclude: "^charts/.*/templates/"
+        args:
+          - "--strict"
+  - repo: "https://github.com/igorshubovych/markdownlint-cli"
+    rev: "v0.34.0"
+    hooks:
+      - id: "markdownlint"
+  - repo: "https://github.com/koalaman/shellcheck-precommit"
+    rev: "v0.10.0"
+    hooks:
+      - id: "shellcheck"
+  - repo: "https://github.com/maxwinterstein/shfmt-py"
+    rev: "v3.4.3.1"
+    hooks:
+      - id: "shfmt"
+  - repo: "https://github.com/rhysd/actionlint"
+    rev: "v1.7.7"
+    hooks:
+      - id: "actionlint"
+...
