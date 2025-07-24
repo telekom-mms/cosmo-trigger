@@ -1,0 +1,34 @@
+---
+name: "pre-commit"
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - "*"  # Runs on all push events to any branch
+  pull_request:
+    branches:
+      - "*"  # Runs on all pull request events targeting any branch
+
+jobs:
+  pre-commit-job:
+    runs-on: "ubuntu-24.04"
+    steps:
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4.2.2"
+      - name: "Set up python and pip cache"
+        uses: "actions/setup-python@v5.6.0"
+        with:
+          python-version: "3.13.2"
+          cache: "pip"
+      - name: "Install python dependencies"
+        run: "pip install -r requirements.txt"
+      - name: "Set up pre-commit cache"
+        uses: "actions/cache@v4.2.3"
+        with:
+          path: "~/.cache/pre-commit"
+          # yamllint disable-line rule:line-length
+          key: "pre-commit|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}"
+      - name: "Run pre-commit"
+        run: "pre-commit run --all-files --color=always --show-diff-on-failure"
+...
