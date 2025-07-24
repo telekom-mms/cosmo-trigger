@@ -1,0 +1,58 @@
+# Development files
+.env
+.env.local
+.env.*.local
+docker.env
+
+# Build outputs
+dist/
+*.exe
+
+# Test files and coverage
+**/*.test.ts
+coverage/
+*.lcov
+
+# Version control
+.git/
+.gitignore
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Deno specific
+.deno/
+deno.lock
