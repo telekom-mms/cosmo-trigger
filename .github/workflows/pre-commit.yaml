@@ -19,7 +19,7 @@ jobs:
       - name: "Set up python and pip cache"
         uses: "actions/setup-python@v5.6.0"
         with:
-          python-version: "3.13.2"
+          python-version: "3.13.5"
           cache: "pip"
       - name: "Install python dependencies"
         run: "pip install -r requirements.txt"
