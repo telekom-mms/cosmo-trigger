@@ -76,7 +76,7 @@ jobs:
             org.opencontainers.image.title=cosmo-trigger
             org.opencontainers.image.description=Cosmos chain monitoring and CI/CD trigger service
             org.opencontainers.image.vendor=Telekom MMS GmbH
-            org.opencontainers.image.authors=VaaS Team <staking@telekom-mms.com>
+            org.opencontainers.image.authors=web3-opensource@telekom-mms.com
             org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
@@ -107,18 +107,6 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
-
-      - name: "Run Docker Scout vulnerability scan"
-        if: github.event_name != 'pull_request'
-        uses: "docker/scout-action@v1"
-        with:
-          command: cves,recommendations,compare
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-          to-latest: true
-          ignore-unchanged: true
-          only-severities: critical,high
-          write-comment: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Output image details"
         run: |
