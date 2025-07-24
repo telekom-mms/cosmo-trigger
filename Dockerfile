@@ -2,11 +2,14 @@
 # hadolint ignore=DL3026
 FROM denoland/deno:alpine-2.4.2
 
-LABEL author="VaaS Team" \
-      contact="staking@telekom-mms.com" \
-      vendor="Telekom MMS GmbH" \
-      name="CosmoTrigger" \
-      description="Build image"
+LABEL org.opencontainers.image.title="CosmoTrigger" \
+      org.opencontainers.image.description="Cosmos chain monitoring and CI/CD trigger service" \
+      org.opencontainers.image.vendor="Telekom MMS GmbH" \
+      org.opencontainers.image.authors="web3-opensource@telekom-mms.com" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.url="https://github.com/telekom-mms/cosmo-trigger" \
+      org.opencontainers.image.documentation="https://github.com/telekom-mms/cosmo-trigger" \
+      org.opencontainers.image.source="https://github.com/telekom-mms/cosmo-trigger"
 
 # Arguments for user and group IDs and names
 # Using non-reserved UIDs/GIDs (e.g., >= 1000)
