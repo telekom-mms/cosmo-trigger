@@ -30,6 +30,7 @@ repos:
       - id: "deno-fmt"
       - id: "deno-lint"
       - id: "deno-test"
+        entry: "deno task test"
   - repo: "https://github.com/adrienverge/yamllint.git"
     rev: "v1.35.1"
     hooks:

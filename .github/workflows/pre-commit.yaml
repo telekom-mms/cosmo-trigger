@@ -3,6 +3,7 @@ name: "pre-commit"
 
 # yamllint disable-line rule:truthy
 on:
+  workflow_dispatch: {}  # Enables manual triggering
   push:
     branches:
       - "*"  # Runs on all push events to any branch
@@ -21,10 +22,10 @@ jobs:
         with:
           python-version: "3.13.2"
           cache: "pip"
-      - name: "Setup Deno"
-        uses: "denoland/setup-deno@v4"
+      - name: "Set up Deno"
+        uses: "denoland/setup-deno@v2.0.3"
         with:
-          deno-version: "1.x"
+          deno-version: "v2.4.2"  # Matches the version in your Dockerfile
       - name: "Install python dependencies"
         run: "pip install -r requirements.txt"
       - name: "Set up pre-commit cache"
