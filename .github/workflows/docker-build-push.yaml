@@ -73,13 +73,11 @@ jobs:
             # SHA for all events
             type=sha,prefix={{branch}}-
           labels: |
-            org.opencontainers.image.title="CosmoTrigger"
-            org.opencontainers.image.description="Cosmos chain monitoring and CI/CD trigger service"
-            org.opencontainers.image.vendor="Telekom MMS GmbH"
-            org.opencontainers.image.authors="web3-opensource@telekom-mms.com"
-            org.opencontainers.image.documentation="https://github.com/${{ github.repository }}"
-            org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-            org.opencontainers.image.licenses="Apache-2.0"
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
       - name: "Build and push Docker image"
         id: build
@@ -93,8 +91,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          provenance: mode=min
-          sbom: false
+          provenance: true
+          sbom: true
           build-args: |
             APP_USER_NAME=cosmo-trigger
             APP_USER_UID=1001
