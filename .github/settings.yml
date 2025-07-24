@@ -1,0 +1,44 @@
+---
+# Source: https://github.com/apps/settings
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        required_reviewers: 1
+      enforce_admins: true
+      required_status_checks:
+        strict: true
+        contexts: []
+      restrictions:
+        apps:
+          - semantic-release
+        users:
+          - github-actions
+        teams: []
+
+repository:
+  # The description of the repository
+  # yamllint disable-line rule:line-length
+  description: "CosmoTrigger is a Deno-based monitoring tool designed to track upcoming upgrades of a Cosmos-SDK based network and trigger a self-defined GitLab pipeline which ultimately executes the update."
+  # A URL with more information about the repository
+  # yamllint disable-line rule:line-length
+  homepage: "https://geschaeftskunden.telekom.de/digitale-loesungen/infrastructure-as-a-service/staking-en"
+  # Either `true` to make the repository private, or `false` to make it public.
+  # TODO: Change to false when the repository is public
+  private: true
+  # Either `true` to allow squash-merging pull requests, or `false` to prevent
+  # squash-merging.
+  allow_squash_merge: true
+  # Either `true` to allow merging pull requests with a merge commit, or `false`
+  # to prevent merging pull requests with merge commits.
+  allow_merge_commit: false
+  # Either `true` to allow rebase-merging pull requests, or `false` to prevent
+  # rebase-merging.
+  allow_rebase_merge: true
+  # Either `true` to enable automatic deletion of branches on merge
+  # or `false` to disable
+  delete_branch_on_merge: true
+...
