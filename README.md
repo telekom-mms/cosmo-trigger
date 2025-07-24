@@ -4,7 +4,9 @@
 
 ## Overview
 
-CosmoTrigger is a Deno-based monitoring tool designed to track upcoming upgrades of a Cosmos-SDK based network and trigger a self-defined GitLab pipeline which ultimately executes the update.
+CosmoTrigger is a Deno-based monitoring tool designed to track upcoming
+upgrades of a Cosmos-SDK based network and trigger a self-defined GitLab
+pipeline which ultimately executes the update.
 
 ## Features
 
@@ -24,10 +26,12 @@ The application consists of three main services:
 
 ## Configuration
 
-The tool uses environment variables for configuration. These variables can be provided through system environment variables or a local `.env` file.
+The tool uses environment variables for configuration. These variables can be
+provided through system environment variables or a local `.env` file.
 
 ### Environment Variables
 
+<!-- markdownlint-disable MD013 -->
 | Environment Variable           | Description                                           | Default Value |
 |--------------------------------|-------------------------------------------------------|---------------|
 | `APPLICATION_PORT`             | Port for the health check server                     | `8080`         |
@@ -38,12 +42,15 @@ The tool uses environment variables for configuration. These variables can be pr
 | `CICD_REPOSITORY_BRANCH`       | GitLab branch to trigger the pipeline on             | (Required)     |
 | `CICD_PROJECT_API_URL`         | GitLab project API URL                               | (Required)     |
 | `CICD_VARIABLES`               | JSON string of additional pipeline variables         | `""`           |
+<!-- markdownlint-enable MD013 -->
 
 ### Configuration Methods
 
 #### Method 1: Using .env File (Recommended)
 
-Create a `.env` file in the same directory as your binary or source code. A template `.env.example` file is provided in the repository. Copy and modify it:
+Create a `.env` file in the same directory as your binary or source code.
+A template `.env.example` file is provided in the repository. Copy and
+modify it:
 
 ```bash
 cp .env.example .env
@@ -71,7 +78,8 @@ APPLICATION_PORT=8080 COSMOS_NODE_REST_URL=http://localhost:1317 ./cosmo-trigger
 
 ### Environment Variable Precedence
 
-Environment variables are loaded with the following priority (**higher priority overrides lower**):
+Environment variables are loaded with the following priority (**higher priority
+overrides lower**):
 
 1. **Inline environment variables** (highest priority)
 2. **System environment variables**
@@ -81,7 +89,8 @@ Environment variables are loaded with the following priority (**higher priority 
 
 ### Method 1: Using Pre-built Binaries (Recommended)
 
-Download the appropriate binary for your platform from the releases or build it yourself:
+Download the appropriate binary for your platform from the releases or build it
+yourself:
 
 ```bash
 ./cosmo-trigger-<OS>-<PLATFORM>
@@ -89,12 +98,15 @@ Download the appropriate binary for your platform from the releases or build it 
 
 **Prerequisites for Binary Method:**
 
-- Create a `.env` file or set environment variables (see [Configuration](#configuration))
-- Ensure binary has execute permissions on Unix systems: `chmod +x cosmo-trigger-*`
+- Create a `.env` file or set environment variables (see
+  [Configuration](#configuration))
+- Ensure binary has execute permissions on Unix systems:
+  `chmod +x cosmo-trigger-*`
 
 **Important Notes for Binaries:**
 
-- ✅ **Compiled binaries automatically load `.env` files** from the current directory - no need to source `.env` files
+- ✅ **Compiled binaries automatically load `.env` files** from the current
+  directory - no need to source `.env` files
 - ✅ **System environment variables override `.env` file values**
 
 ### Method 2: Using Deno Runtime
@@ -105,7 +117,8 @@ Download the appropriate binary for your platform from the releases or build it 
    Ensure you have [Deno](https://deno.land/) installed on your system.
 
 2. **Set up environment variables**
-   Create a `.env` file with the required variables or export them directly in your terminal (see [Configuration](#configuration)).
+   Create a `.env` file with the required variables or export them directly in
+   your terminal (see [Configuration](#configuration)).
 
 ```bash
 deno run --allow-net --allow-env --allow-read src/app.ts
@@ -119,12 +132,14 @@ deno task start
 
 ### Method 3: Using Docker
 
-CosmoTrigger provides a ready-to-use Docker image that can be run with various environment variable configurations.
+CosmoTrigger provides a ready-to-use Docker image that can be run with various
+environment variable configurations.
 
 #### Prerequisites for Docker
 
 - **Docker**: Ensure Docker is installed and running on your system
-- **Environment Variables**: Configure required variables using one of the methods below
+- **Environment Variables**: Configure required variables using one of the
+  methods below
 
 #### Basic Usage
 

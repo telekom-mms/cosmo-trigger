@@ -30,6 +30,7 @@ repos:
       - id: "deno-fmt"
       - id: "deno-lint"
       - id: "deno-test"
+        # Is needed, because the tests rely on the .env file
         entry: "deno task test"
   - repo: "https://github.com/adrienverge/yamllint.git"
     rev: "v1.35.1"
