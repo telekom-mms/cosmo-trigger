@@ -71,18 +71,17 @@ RUN mkdir -p ${DENO_DIR} && \
 # Copy source files and config, changing ownership to the non-root user
 COPY --chown=${APP_USER_UID}:${APP_GROUP_GID} . .
 
-# Set appropriate permissions for the application files
-# Directories: rwxr-x--- (750) for owner and group
-# Files: rw-r----- (640) for owner and group
-RUN find /app -type d -exec chmod 750 {} \; && \
-    find /app -type f -exec chmod 640 {} \;
-
-# Switch to the non-root user for subsequent commands
-USER ${APP_USER_NAME}
-
-# Cache dependencies as the non-root user.
-# DENO_DIR is set and the directory is writable by APP_USER_NAME.
+# Cache dependencies first while files have default permissions
 RUN deno cache src/app.ts
+
+# Set appropriate permissions for the application files after caching
+# Directories: rwxr-xr-x (755) for owner and group
+# Files: rw-r--r-- (644) for owner read/write, group and others read
+RUN find /app -type d -exec chmod 755 {} \; && \
+    find /app -type f -exec chmod 644 {} \;
+
+# Switch to the non-root user for runtime
+USER ${APP_USER_NAME}
 
 # Expose the port your application listens on.
 # This uses the APPLICATION_PORT env var defined above.
