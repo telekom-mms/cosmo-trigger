@@ -1,0 +1,69 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "strict": true,
+    "strictNullChecks": true
+  },
+  "fmt": {
+    "include": [
+      "src/",
+      "config/"
+    ],
+    "indentWidth": 2,
+    "lineWidth": 80,
+    "proseWrap": "preserve",
+    "semiColons": true,
+    "singleQuote": false,
+    "useTabs": false
+  },
+  "imports": {
+    "config/": "./config/",
+    "dotenv": "https://deno.land/std@0.224.0/dotenv/mod.ts",
+    "log": "https://deno.land/std@0.224.0/log/mod.ts",
+    "src/": "./src/",
+    "test-assert": "https://deno.land/std@0.224.0/assert/mod.ts",
+    "test-mock": "https://deno.land/std@0.224.0/testing/mock.ts",
+    "test-time": "https://deno.land/std@0.224.0/testing/time.ts"
+  },
+  "lint": {
+    "exclude": [
+      "tests/**/*.ts"
+    ],
+    "include": [
+      "src/**/*.ts",
+      "config/**/*.ts"
+    ],
+    "rules": {
+      "include": [
+        "explicit-function-return-type",
+        "ban-untagged-todo"
+      ],
+      "tags": [
+        "recommended"
+      ]
+    }
+  },
+  "tasks": {
+    "build:all": "deno task build:clean && deno task build:windows-x64 && deno task build:linux-x64 && deno task build:linux-arm64 && deno task build:macos-x64 && deno task build:macos-arm64",
+    "build:clean": "rm -rf ./dist",
+    "build:current": "deno compile --allow-net --allow-env --allow-read --output ./dist/cosmo-trigger src/app.ts",
+    "build:linux-arm64": "deno compile --allow-net --allow-env --allow-read --target aarch64-unknown-linux-gnu --output ./dist/cosmo-trigger-linux-arm64 src/app.ts",
+    "build:linux-x64": "deno compile --allow-net --allow-env --allow-read --target x86_64-unknown-linux-gnu --output ./dist/cosmo-trigger-linux-x64 src/app.ts",
+    "build:macos-arm64": "deno compile --allow-net --allow-env --allow-read --target aarch64-apple-darwin --output ./dist/cosmo-trigger-macos-arm64 src/app.ts",
+    "build:macos-x64": "deno compile --allow-net --allow-env --allow-read --target x86_64-apple-darwin --output ./dist/cosmo-trigger-macos-x64 src/app.ts",
+    "build:windows-x64": "deno compile --allow-net --allow-env --allow-read --target x86_64-pc-windows-msvc --output ./dist/cosmo-trigger-windows-x64 src/app.ts",
+    "cache": "deno cache --reload src/app.ts",
+    "check": "deno check src/app.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint",
+    "start": "deno run --allow-net --allow-env --allow-read src/app.ts",
+    "test": "deno test --allow-net --allow-env --allow-read --coverage",
+    "validate": "deno task fmt && deno task lint && deno task check"
+  },
+  "test": {
+    "include": [
+      "src/"
+    ]
+  },
+  "version": "1.0.0"
+}

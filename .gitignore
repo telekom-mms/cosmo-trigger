@@ -1,0 +1,26 @@
+# Deno cache (optional to ignore if you cache modules locally)
+deno.lock
+deno.deps.ts
+deno.gen.ts
+.deno/
+.deno_plugins/
+deno-dir/
+dist/
+
+# VSCode settings (optional)
+.vscode/
+
+# JetBrains IDE settings
+.idea/*
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment files
+.env
+.env.local
+
+# Test coverage or reports
+coverage/
