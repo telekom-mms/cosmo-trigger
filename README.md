@@ -182,7 +182,8 @@ docker run -d \
 
 #### Docker Compose
 
-On Mac, you can use the `host.docker.internal` alias to access the host machine's services.
+On Mac, you can use the `host.docker.internal`
+alias to access the host machine's services.
 
 ```bash
 COSMOS_NODE_REST_URL=http://host.docker.internal:1317 docker compose up -d
