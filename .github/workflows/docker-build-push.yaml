@@ -19,17 +19,17 @@ on:
       - "develop"
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: "ghcr.io"
+  IMAGE_NAME: "${{ github.repository }}"
 
 jobs:
   docker-build-push-job:
     runs-on: "ubuntu-24.04"
     permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
+      contents: "read"
+      packages: "write"
+      attestations: "write"
+      id-token: "write"
     steps:
       - name: "Checkout repository"
         uses: "actions/checkout@v4.2.2"
@@ -37,26 +37,26 @@ jobs:
       - name: "Set up Docker Buildx"
         uses: "docker/setup-buildx-action@v3"
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: "linux/amd64,linux/arm64"
 
       - name: "Set up QEMU for multi-platform builds"
         uses: "docker/setup-qemu-action@v3"
         with:
-          platforms: arm64
+          platforms: "arm64"
 
       - name: "Log in to Container Registry"
-        if: github.event_name != 'pull_request'
+        if: "${{ github.event_name != 'pull_request' }}"
         uses: "docker/login-action@v3"
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: "${{ env.REGISTRY }}"
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: "Extract metadata"
-        id: meta
+        id: "meta"
         uses: "docker/metadata-action@v5"
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           tags: |
             # Branch event
             type=ref,event=branch
@@ -76,17 +76,17 @@ jobs:
             type=sha
 
       - name: "Build and push Docker image"
-        id: build
+        id: "build"
         uses: "docker/build-push-action@v6"
         with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          context: "."
+          file: "./Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: "${{ github.event_name != 'pull_request' }}"
+          tags: "${{ steps.meta.outputs.tags }}"
+          labels: "${{ steps.meta.outputs.labels }}"
+          cache-from: "type=gha"
+          cache-to: "type=gha,mode=max"
           provenance: true
           sbom: true
           build-args: |
@@ -96,11 +96,11 @@ jobs:
             APP_GROUP_GID=1001
 
       - name: "Generate artifact attestation"
-        if: github.event_name != 'pull_request'
+        if: "${{ github.event_name != 'pull_request' }}"
         uses: "actions/attest-build-provenance@v2"
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.build.outputs.digest }}
+          subject-name: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          subject-digest: "${{ steps.build.outputs.digest }}"
           push-to-registry: true
 
       - name: "Output image details"
@@ -109,3 +109,4 @@ jobs:
           echo "Tags: ${{ steps.meta.outputs.tags }}"
           echo "Digest: ${{ steps.build.outputs.digest }}"
           echo "Metadata: ${{ steps.meta.outputs.json }}"
+...

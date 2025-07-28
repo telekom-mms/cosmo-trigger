@@ -1,50 +1,53 @@
 ---
-name: Semantic Release
+name: "Semantic Release"
 
 # yamllint disable-line rule:truthy
 on:
   push:
     branches:
-      - main
+      - "main"
   pull_request:
     branches:
-      - main
+      - "main"
 
 jobs:
   semantic-release:
     permissions:
       # To be able to publish a GitHub release
-      contents: write
+      contents: "write"
       # To be able to comment on released issues
-      issues: write
+      issues: "write"
       # To be able to comment on released pull requests
-      pull-requests: write
-    runs-on: ubuntu-latest
+      pull-requests: "write"
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4"
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Configure Git
+      - name: "Configure Git"
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: "Setup Node.js"
+        uses: "actions/setup-node@v4"
         with:
-          node-version: '23'
+          node-version: "23"
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: "Install jq"
+        run: "sudo apt-get update && sudo apt-get install -y jq"
 
-      - name: Install semantic-release
-        run: yarn add semantic-release @semantic-release/exec @semantic-release/git
+      - name: "Install semantic-release"
+        run: >
+          yarn add semantic-release
+          @semantic-release/exec
+          @semantic-release/git
 
-      - name: Run Semantic Release
+      - name: "Run Semantic Release"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: "npx semantic-release"
 ...

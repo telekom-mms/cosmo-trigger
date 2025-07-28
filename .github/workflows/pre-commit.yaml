@@ -16,20 +16,20 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
       - name: "Checkout repository"
-        uses: "actions/checkout@v4.2.2"
+        uses: "actions/checkout@v4"
       - name: "Set up python and pip cache"
-        uses: "actions/setup-python@v5.6.0"
+        uses: "actions/setup-python@v5"
         with:
           python-version: "3.13.2"
           cache: "pip"
       - name: "Set up Deno"
-        uses: "denoland/setup-deno@v2.0.3"
+        uses: "denoland/setup-deno@v2"
         with:
-          deno-version: "v2.4.2"  # Matches the version in your Dockerfile
+          deno-version: "v2.4.2"
       - name: "Install python dependencies"
         run: "pip install -r requirements.txt"
       - name: "Set up pre-commit cache"
-        uses: "actions/cache@v4.2.3"
+        uses: "actions/cache@v4"
         with:
           path: "~/.cache/pre-commit"
           # yamllint disable-line rule:line-length

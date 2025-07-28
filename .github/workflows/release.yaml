@@ -1,0 +1,71 @@
+---
+name: "Release Binaries"
+
+# yamllint disable-line rule:truthy
+on:
+  release:
+    types: ["created"]
+
+jobs:
+  build:
+    permissions:
+      # To be able to upload release assets
+      contents: "write"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout repository"
+        uses: "actions/checkout@v4"
+
+      - name: "Setup Deno"
+        uses: "denoland/setup-deno@v2"
+        with:
+          deno-version: "v2.4.2"
+
+      - name: "Cache dependencies"
+        run: "deno cache src/app.ts"
+
+      - name: "Build all binaries"
+        run: "deno task build:all"
+
+      - name: "Upload binaries"
+        uses: "actions/upload-artifact@v4"
+        with:
+          name: "binaries"
+          path: "./dist/*"
+
+  upload:
+    needs: "build"
+    permissions:
+      contents: "write"
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        include:
+          - platform: "linux-x64"
+            extension: ""
+          - platform: "linux-arm64"
+            extension: ""
+          - platform: "macos-x64"
+            extension: ""
+          - platform: "macos-arm64"
+            extension: ""
+          - platform: "windows-x64"
+            extension: ".exe"
+    steps:
+      - name: "Download binaries"
+        uses: "actions/download-artifact@v4"
+        with:
+          name: "binaries"
+          path: "./dist"
+
+      - name: "Upload ${{ matrix.platform }} binary"
+        uses: "actions/upload-release-asset@v1"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        with:
+          upload_url: "${{ github.event.release.upload_url }}"
+          asset_path: "./dist/cosmo-trigger-${{ matrix.platform }}"
+          # yamllint disable-line rule:line-length
+          asset_name: "cosmo-trigger-${{ matrix.platform }}${{ matrix.extension }}"
+          asset_content_type: "application/octet-stream"
+...
