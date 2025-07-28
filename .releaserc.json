@@ -1,23 +1,89 @@
 {
-    "branches": [
-        "main"
+  "branches": [
+    "main"
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            {
+              "section": "\ud83d\ude80 Features",
+              "type": "feat"
+            },
+            {
+              "section": "\ud83d\udc1b Bug Fixes",
+              "type": "fix"
+            },
+            {
+              "section": "\ud83d\udcd6 Documentation",
+              "type": "docs"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "refactor"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "style"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "test"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "chore"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "perf"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "ci"
+            },
+            {
+              "section": "\ud83d\udd27 Other",
+              "type": "build"
+            }
+          ]
+        },
+        "writerOpts": {
+          "commitGroupsSort": "title",
+          "commitsSort": [
+            "subject",
+            "scope"
+          ],
+          "mainTemplate": "{{> header}}{{#each commitGroups}}{{> commit-group}}{{/each}}{{#each noteGroups}}{{> note-group}}{{/each}}{{> footer}}---\n\n\ud83d\udc33 **Docker Images**: Docker images for this release are available in the [GitHub Container Registry](https://github.com/telekom-mms/cosmo-trigger/pkgs/container/cosmo-trigger).",
+          "noteGroupsSort": "title",
+          "notesSort": "text",
+          "transform": {
+            "notes": {
+              "title": "\ud83d\udca5 Breaking Changes"
+            }
+          }
+        }
+      }
     ],
-    "plugins": [
-        "@semantic-release/commit-analyzer",
-        "@semantic-release/release-notes-generator",
-        [
-            "@semantic-release/exec",
-            {
-                "prepareCmd": "jq '.version = \"${nextRelease.version}\"' deno.json > deno.json.tmp && mv deno.json.tmp deno.json"
-            }
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "jq '.version = \"${nextRelease.version}\"' deno.json > deno.json.tmp && mv deno.json.tmp deno.json"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "deno.json"
         ],
-        [
-            "@semantic-release/git",
-            {
-                "assets": ["deno.json"],
-                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-            }
-        ],
-        "@semantic-release/github"
-    ]
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    "@semantic-release/github"
+  ]
 }
