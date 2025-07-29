@@ -163,6 +163,7 @@ export async function detectUpgradePlan(
  * @param state - The monitor state object.
  * @param deps - Dependencies for external calls.
  * @param currentHeight - The current blockchain height.
+ * @param signal - Optional AbortSignal for graceful shutdown.
  * @returns Object indicating if upgrade was executed and whether to continue monitoring.
  */
 export async function handleUpgradeExecution(
@@ -208,12 +209,38 @@ export async function handleUpgradeExecution(
 }
 
 /**
- * Creates a scheduler function for recursive monitoring calls.
- * Handles abort signal cleanup and test environment quirks.
+ * Executes a single monitoring cycle with proper cleanup.
  *
  * @param config - The application configuration.
  * @param deps - Dependencies for external calls.
- * @param signal - AbortSignal for graceful shutdown.
+ * @param cleanup - Cleanup function to call when done.
+ * @param resolve - Promise resolve function to call when complete.
+ * @param signal - Optional AbortSignal for graceful shutdown.
+ */
+async function executeMonitoringCycle(
+  config: Config,
+  deps: typeof defaultDependencies,
+  cleanup: () => void,
+  resolve: () => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    if (!signal?.aborted) {
+      await monitorChain(config, deps, signal);
+    }
+  } finally {
+    cleanup();
+    resolve();
+  }
+}
+
+/**
+ * Creates a scheduler function for recursive monitoring calls.
+ * Handles abort signal cleanup and resource management.
+ *
+ * @param config - The application configuration.
+ * @param deps - Dependencies for external calls.
+ * @param signal - Optional AbortSignal for graceful shutdown.
  * @returns Function to schedule next monitoring cycle.
  */
 export function createMonitorScheduler(
@@ -225,18 +252,30 @@ export function createMonitorScheduler(
     if (signal?.aborted) return Promise.resolve();
 
     return new Promise((resolve) => {
-      const timeoutId = deps.setTimeout(() => {
-        if (!signal?.aborted) {
-          monitorChain(config, deps, signal).then(resolve).catch(resolve);
-        } else {
-          resolve();
-        }
-      }, delay);
+      let timeoutId: number | null = null;
+      let abortListener: (() => void) | null = null;
 
-      signal?.addEventListener("abort", () => {
-        clearTimeout(timeoutId);
-        resolve();
-      });
+      const cleanup = () => {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
+        if (abortListener && signal) {
+          signal.removeEventListener("abort", abortListener);
+        }
+      };
+
+      const executeNextMonitor = () =>
+        executeMonitoringCycle(config, deps, cleanup, resolve, signal);
+
+      timeoutId = deps.setTimeout(executeNextMonitor, delay);
+
+      if (signal) {
+        abortListener = () => {
+          cleanup();
+          resolve();
+        };
+        signal.addEventListener("abort", abortListener);
+      }
     });
   };
 }
@@ -246,8 +285,8 @@ export function createMonitorScheduler(
  * Dependencies are injected to allow for mocking in tests.
  *
  * @param config - The application configuration.
- * @param deps - An object containing the functions this monitor depends on.
- * @param signal - AbortSignal for graceful shutdown.
+ * @param deps - Dependencies object containing external functions.
+ * @param signal - Optional AbortSignal for graceful shutdown.
  */
 export async function monitorChain(
   config: Config,

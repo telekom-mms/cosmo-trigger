@@ -722,19 +722,83 @@ Deno.test(
       setTimeout: (_cb, delay) => {
         setTimeoutCalled = true;
         capturedDelay = delay || 0;
+        // Don't execute callback to avoid infinite loop
         return 1; // Return realistic timer ID
       },
     });
 
     const scheduler = createMonitorScheduler(config, deps, controller.signal);
 
-    // Abort immediately to resolve the Promise
-    setTimeout(() => controller.abort(), 5);
-
-    await scheduler(1000);
+    // Start scheduler and immediately abort to resolve promise
+    const promise = scheduler(1000);
+    controller.abort();
+    await promise;
 
     assertEquals(setTimeoutCalled, true);
     assertEquals(capturedDelay, 1000);
+  },
+);
+
+Deno.test(
+  "createMonitorScheduler should properly clean up resources on abort",
+  async () => {
+    const config = createMockConfig();
+    let addEventListenerCalled = false;
+    let removeEventListenerCalled = false;
+    let clearTimeoutCalled = false;
+    let timeoutId = 0;
+
+    // Create a controller we can manually abort
+    const controller = new AbortController();
+
+    // Override the signal's addEventListener to track calls
+    const originalAddEventListener = controller.signal.addEventListener;
+    const originalRemoveEventListener = controller.signal.removeEventListener;
+
+    controller.signal.addEventListener = function (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+    ): void {
+      addEventListenerCalled = true;
+      return originalAddEventListener.call(this, type, listener);
+    };
+
+    controller.signal.removeEventListener = function (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+    ): void {
+      removeEventListenerCalled = true;
+      return originalRemoveEventListener.call(this, type, listener);
+    };
+
+    const deps = createMockDependencies({
+      setTimeout: (_cb, _delay) => {
+        timeoutId = ++timeoutId;
+        return timeoutId;
+      },
+    });
+
+    // Mock clearTimeout to track cleanup
+    const originalClearTimeout = globalThis.clearTimeout;
+    globalThis.clearTimeout = (id) => {
+      clearTimeoutCalled = true;
+      originalClearTimeout(id);
+    };
+
+    try {
+      const scheduler = createMonitorScheduler(config, deps, controller.signal);
+
+      // Start the scheduler and immediately abort
+      const promise = scheduler(1000);
+      controller.abort();
+      await promise;
+
+      assertEquals(addEventListenerCalled, true);
+      assertEquals(removeEventListenerCalled, true);
+      assertEquals(clearTimeoutCalled, true);
+    } finally {
+      globalThis.clearTimeout = originalClearTimeout;
+    }
   },
 );
 
