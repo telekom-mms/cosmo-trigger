@@ -1,11 +1,11 @@
 import { type Config } from "config/config.ts";
 import {
   checkNodeLiveness,
-  createMonitorScheduler,
   detectUpgradePlan,
   ensureChainIdentity,
   handleUpgradeExecution,
   monitorChain,
+  startMonitoring,
 } from "src/service/monitor.ts";
 import { ChainIdentity } from "src/types/chain-identity.ts";
 import { MonitorState } from "src/types/monitor.ts";
@@ -67,6 +67,7 @@ interface MockDependencies {
     ...args: unknown[]
   ) => number;
   delay: (ms: number, signal?: AbortSignal) => Promise<void>;
+  state: MonitorState;
 }
 
 function createMockDependencies(
@@ -89,12 +90,13 @@ function createMockDependencies(
       return nextTimerId++;
     },
     delay: (_ms: number, _signal?: AbortSignal) => Promise.resolve(),
+    state: new MonitorState(),
     ...overrides,
   };
 }
 
 Deno.test(
-  "monitorChain should fetch chain identity on first run",
+  "monitorChain should fetch chain identity on first run and return poll interval",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
     let getChainIdentityCalled = false;
@@ -103,7 +105,6 @@ Deno.test(
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => {
           getChainIdentityCalled = true;
@@ -115,13 +116,11 @@ Deno.test(
         },
       });
 
-      // Abort after a short delay to prevent hanging
-      setTimeout(() => controller.abort(), 10);
-
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
       assertEquals(getChainIdentityCalled, true);
       assertEquals(getBlockHeightCalled, true);
+      assertEquals(delay, 2000); // config.pollIntervalMs
     } finally {
       restoreEnv(originalEnv);
     }
@@ -133,38 +132,26 @@ Deno.test(
 // require proper state reset functionality in the monitor service.
 
 Deno.test(
-  "monitorChain should handle block height fetch failure",
+  "monitorChain should return long poll interval when block height fetch fails",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
     let getBlockHeightCalled = false;
-    let setTimeoutCalled = false;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => {
           getBlockHeightCalled = true;
           return Promise.resolve(null);
         },
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCalled = true;
-          assertEquals(delay, 10000); // LONG_POLL_INTERVAL_MS
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
       assertEquals(getBlockHeightCalled, true);
-      assertEquals(setTimeoutCalled, true);
+      assertEquals(delay, 10000); // LONG_POLL_INTERVAL_MS
     } finally {
       restoreEnv(originalEnv);
     }
@@ -172,16 +159,14 @@ Deno.test(
 );
 
 Deno.test(
-  "monitorChain should detect upgrade plan",
+  "monitorChain should detect upgrade plan and return poll interval",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
     let getUpgradePlanCalled = false;
-    let setTimeoutCalled = false;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => Promise.resolve(12345),
@@ -189,22 +174,12 @@ Deno.test(
           getUpgradePlanCalled = true;
           return Promise.resolve(15000); // Future block height
         },
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCalled = true;
-          assertEquals(delay, 2000); // POLL_INTERVAL_MS
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
       assertEquals(getUpgradePlanCalled, true);
-      assertEquals(setTimeoutCalled, true);
+      assertEquals(delay, 2000); // POLL_INTERVAL_MS
     } finally {
       restoreEnv(originalEnv);
     }
@@ -212,17 +187,15 @@ Deno.test(
 );
 
 Deno.test(
-  "monitorChain should trigger update pipeline when upgrade height reached",
+  "monitorChain should trigger update pipeline when upgrade height reached and return poll interval",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
     let triggerUpdatePipelineCalled = false;
-    let setTimeoutCallCount = 0;
     let delayCallCount = 0;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => Promise.resolve(15000), // Current height
@@ -238,25 +211,13 @@ Deno.test(
           }
           return Promise.resolve();
         },
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCallCount++;
-          if (setTimeoutCallCount === 1) {
-            assertEquals(delay, 2000); // Regular poll interval to resume monitoring
-          }
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
       assertEquals(triggerUpdatePipelineCalled, true);
       assertEquals(delayCallCount, 1); // Should call delay once for POST_UPGRADE_WAIT_MS
-      assertEquals(setTimeoutCallCount, 1); // Should call setTimeout once for scheduling next monitor
+      assertEquals(delay, 2000); // Should return poll interval for next cycle
     } finally {
       restoreEnv(originalEnv);
     }
@@ -264,16 +225,14 @@ Deno.test(
 );
 
 Deno.test(
-  "monitorChain should continue monitoring when no upgrade plan",
+  "monitorChain should return poll interval when no upgrade plan",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
     let getUpgradePlanCalled = false;
-    let setTimeoutCalled = false;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => Promise.resolve(12345),
@@ -281,22 +240,12 @@ Deno.test(
           getUpgradePlanCalled = true;
           return Promise.resolve(null); // No upgrade plan
         },
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCalled = true;
-          assertEquals(delay, 2000); // POLL_INTERVAL_MS
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
       assertEquals(getUpgradePlanCalled, true);
-      assertEquals(setTimeoutCalled, true);
+      assertEquals(delay, 2000); // POLL_INTERVAL_MS
     } finally {
       restoreEnv(originalEnv);
     }
@@ -304,35 +253,30 @@ Deno.test(
 );
 
 Deno.test(
-  "monitorChain should handle errors gracefully",
+  "monitorChain should throw errors for caller to handle",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
-    let setTimeoutCalled = false;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => {
           throw new Error("Network error");
         },
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCalled = true;
-          assertEquals(delay, 5000); // Error retry interval
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      let errorThrown = false;
+      try {
+        await monitorChain(createMockConfig(), deps);
+      } catch (err) {
+        assertEquals(err instanceof Error, true);
+        assertEquals((err as Error).message, "Network error");
+        errorThrown = true;
+      }
 
-      assertEquals(setTimeoutCalled, true);
+      assertEquals(errorThrown, true);
     } finally {
       restoreEnv(originalEnv);
     }
@@ -340,34 +284,22 @@ Deno.test(
 );
 
 Deno.test(
-  "monitorChain should wait for upgrade when current height is below upgrade height",
+  "monitorChain should return poll interval when current height is below upgrade height",
   async () => {
     const originalEnv = backupEnv(MONITOR_ENV_KEYS);
-    let setTimeoutCalled = false;
 
     try {
       setupMonitorEnv();
 
-      const controller = new AbortController();
       const deps = createMockDependencies({
         getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
         getBlockHeight: () => Promise.resolve(10000), // Current height
         getUpgradePlan: () => Promise.resolve(15000), // Upgrade at higher height
-        setTimeout: (
-          _cb: (...args: unknown[]) => void,
-          delay?: number,
-          ..._args: unknown[]
-        ) => {
-          setTimeoutCalled = true;
-          assertEquals(delay, 2000); // POLL_INTERVAL_MS
-          return 1;
-        },
       });
 
-      setTimeout(() => controller.abort(), 10);
-      await monitorChain(createMockConfig(), deps, controller.signal);
+      const delay = await monitorChain(createMockConfig(), deps);
 
-      assertEquals(setTimeoutCalled, true);
+      assertEquals(delay, 2000); // POLL_INTERVAL_MS
     } finally {
       restoreEnv(originalEnv);
     }
@@ -693,111 +625,80 @@ Deno.test(
   },
 );
 
-// createMonitorScheduler Tests
+// startMonitoring Tests
 Deno.test(
-  "createMonitorScheduler should create function that respects abort signal",
-  () => {
-    const config = createMockConfig();
-    const deps = createMockDependencies();
-    const controller = new AbortController();
-    controller.abort(); // Pre-abort
-
-    const scheduler = createMonitorScheduler(config, deps, controller.signal);
-    const promise = scheduler(1000);
-
-    // Should resolve immediately when signal is aborted
-    assertEquals(promise instanceof Promise, true);
-  },
-);
-
-Deno.test(
-  "createMonitorScheduler should call setTimeout with correct delay",
+  "startMonitoring should loop until aborted",
   async () => {
-    const config = createMockConfig();
-    let setTimeoutCalled = false;
-    let capturedDelay = 0;
-
-    const controller = new AbortController();
-    const deps = createMockDependencies({
-      setTimeout: (_cb, delay) => {
-        setTimeoutCalled = true;
-        capturedDelay = delay || 0;
-        // Don't execute callback to avoid infinite loop
-        return 1; // Return realistic timer ID
-      },
-    });
-
-    const scheduler = createMonitorScheduler(config, deps, controller.signal);
-
-    // Start scheduler and immediately abort to resolve promise
-    const promise = scheduler(1000);
-    controller.abort();
-    await promise;
-
-    assertEquals(setTimeoutCalled, true);
-    assertEquals(capturedDelay, 1000);
-  },
-);
-
-Deno.test(
-  "createMonitorScheduler should properly clean up resources on abort",
-  async () => {
-    const config = createMockConfig();
-    let addEventListenerCalled = false;
-    let removeEventListenerCalled = false;
-    let clearTimeoutCalled = false;
-    let timeoutId = 0;
-
-    // Create a controller we can manually abort
-    const controller = new AbortController();
-
-    // Override the signal's addEventListener to track calls
-    const originalAddEventListener = controller.signal.addEventListener;
-    const originalRemoveEventListener = controller.signal.removeEventListener;
-
-    controller.signal.addEventListener = function (
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-    ): void {
-      addEventListenerCalled = true;
-      return originalAddEventListener.call(this, type, listener);
-    };
-
-    controller.signal.removeEventListener = function (
-      type: string,
-      listener: EventListenerOrEventListenerObject,
-    ): void {
-      removeEventListenerCalled = true;
-      return originalRemoveEventListener.call(this, type, listener);
-    };
-
-    const deps = createMockDependencies({
-      setTimeout: (_cb, _delay) => {
-        timeoutId = ++timeoutId;
-        return timeoutId;
-      },
-    });
-
-    // Mock clearTimeout to track cleanup
-    const originalClearTimeout = globalThis.clearTimeout;
-    globalThis.clearTimeout = (id) => {
-      clearTimeoutCalled = true;
-      originalClearTimeout(id);
-    };
+    const originalEnv = backupEnv(MONITOR_ENV_KEYS);
+    let delayCallCount = 0;
 
     try {
-      const scheduler = createMonitorScheduler(config, deps, controller.signal);
+      setupMonitorEnv();
 
-      // Start the scheduler and immediately abort
-      const promise = scheduler(1000);
-      controller.abort();
-      await promise;
+      const controller = new AbortController();
+      const deps = createMockDependencies({
+        getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
+        getBlockHeight: () => Promise.resolve(12345),
+        getUpgradePlan: () => Promise.resolve(null),
+        delay: (ms: number) => {
+          delayCallCount++;
+          assertEquals(ms, 2000); // Should be poll interval
+          if (delayCallCount === 2) {
+            // Abort after second delay to stop the loop
+            controller.abort();
+          }
+          return Promise.resolve();
+        },
+      });
 
-      assertEquals(addEventListenerCalled, true);
-      assertEquals(removeEventListenerCalled, true);
-      assertEquals(clearTimeoutCalled, true);
+      await startMonitoring(createMockConfig(), deps, controller.signal);
+
+      assertEquals(delayCallCount, 2); // Should delay twice before abort
     } finally {
-      globalThis.clearTimeout = originalClearTimeout;
+      restoreEnv(originalEnv);
+    }
+  },
+);
+
+Deno.test(
+  "startMonitoring should handle errors with retry delay",
+  async () => {
+    const originalEnv = backupEnv(MONITOR_ENV_KEYS);
+    let monitorChainCalled = 0;
+    let delayCallCount = 0;
+
+    try {
+      setupMonitorEnv();
+
+      const controller = new AbortController();
+      const deps = createMockDependencies({
+        getBlockHeight: () => {
+          monitorChainCalled++;
+          if (monitorChainCalled === 1) {
+            throw new Error("Test error");
+          }
+          return Promise.resolve(12345);
+        },
+        getChainIdentity: () => Promise.resolve(createMockChainIdentity()),
+        getUpgradePlan: () => Promise.resolve(null),
+        delay: (ms: number) => {
+          delayCallCount++;
+          if (delayCallCount === 1) {
+            assertEquals(ms, 5000); // ERROR_RETRY_INTERVAL_MS after first error
+          } else if (delayCallCount === 2) {
+            assertEquals(ms, 2000); // Normal poll interval after success
+            controller.abort(); // Stop after successful cycle
+          }
+          return Promise.resolve();
+        },
+      });
+
+      await startMonitoring(createMockConfig(), deps, controller.signal);
+
+      assertEquals(monitorChainCalled, 2); // First call throws, second succeeds
+      assertEquals(delayCallCount, 2); // Error retry + normal delay
+    } finally {
+      restoreEnv(originalEnv);
     }
   },
 );
