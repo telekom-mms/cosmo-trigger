@@ -1,4 +1,8 @@
-# CosmoTrigger
+<!-- markdownlint-disable MD033 -->
+<h1 align="center" style="border-bottom: none">
+    <img alt="CosmoTrigger" src="./img/CosmoTrigger-logo.svg" width="80" height="80"><br>CosmoTrigger
+</h1>
+<!-- markdownlint-enable MD033 -->
 
 **Note: CosmoTrigger currently only works for Gitlab pipelines.**
 
