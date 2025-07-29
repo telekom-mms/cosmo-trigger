@@ -200,6 +200,52 @@ Deno.test("fetchJson should handle fetch exceptions", async () => {
   });
 });
 
+Deno.test("fetchJson should consume response body on HTTP errors", async () => {
+  let textCalled = false;
+
+  await withMockedFetch(() => {
+    return Promise.resolve({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new Error("Should not be called")),
+      text: () => {
+        textCalled = true;
+        return Promise.resolve("Internal Server Error");
+      },
+    } as Response);
+  }, async () => {
+    const result = await fetchJson<TestUser>("https://api.example.com/user");
+
+    assertEquals(isFailure(result), true);
+    assertEquals(textCalled, true); // Verify response body was consumed
+    if (isFailure(result)) {
+      assertEquals(result.error instanceof NetworkError, true);
+      assertEquals(result.error.message, "HTTP error! status: 500");
+      assertEquals(result.error.statusCode, 500);
+    }
+  });
+});
+
+Deno.test("fetchJson should handle response body consumption errors gracefully", async () => {
+  await withMockedFetch(() => {
+    return Promise.resolve({
+      ok: false,
+      status: 404,
+      json: () => Promise.reject(new Error("Should not be called")),
+      text: () => Promise.reject(new Error("Failed to read response body")),
+    } as Response);
+  }, async () => {
+    const result = await fetchJson<TestUser>("https://api.example.com/user");
+
+    assertEquals(isFailure(result), true);
+    if (isFailure(result)) {
+      assertEquals(result.error instanceof NetworkError, true);
+      assertEquals(result.error.message, "HTTP error! status: 404");
+      assertEquals(result.error.statusCode, 404);
+    }
+  });
+});
+
 // safeGet Tests - Success Cases
 
 Deno.test("safeGet should return value for valid path", () => {

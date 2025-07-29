@@ -1,16 +1,53 @@
 import { failure, NetworkError, Result, success } from "src/types/result.ts";
 import { logError } from "src/utils/logger.ts";
+import { HttpResponse } from "src/types/http.ts";
 
 /**
- * Represents an HTTP response with typed data and status information.
+ * Consumes error response body to free resources.
+ *
+ * @param response - The HTTP response to consume.
+ */
+async function consumeErrorResponse(response: Response): Promise<void> {
+  try {
+    await response.text();
+  } catch {
+    // Ignore consumption errors
+  }
+}
+
+/**
+ * Processes successful HTTP response into HttpResponse object.
  *
  * @template T - The type of the response data.
+ * @param response - The HTTP response object.
+ * @param data - The parsed response data.
+ * @returns HttpResponse object with data and status.
  */
-export interface HttpResponse<T> {
-  /** The parsed response data */
-  data: T;
-  /** The HTTP status code */
-  status: number;
+function processSuccessResponse<T>(
+  response: Response,
+  data: T,
+): HttpResponse<T> {
+  const status = response.status;
+  return { data, status };
+}
+
+/**
+ * Creates a NetworkError from caught exception.
+ *
+ * @param err - The caught error or exception.
+ * @param url - The URL that was being fetched.
+ * @returns NetworkError with appropriate message and status code.
+ */
+function createNetworkError(err: unknown, url: string): NetworkError {
+  logError(`Failed to fetch from ${url}:`, err);
+
+  if (err instanceof TypeError && err.message.includes("JSON")) {
+    return new NetworkError("Invalid JSON response", 0);
+  }
+
+  return new NetworkError(
+    err instanceof Error ? err.message : "Network request failed",
+  );
 }
 
 /**
@@ -34,36 +71,26 @@ export async function fetchJson<T>(
   url: string,
   options?: RequestInit,
 ): Promise<Result<HttpResponse<T>, NetworkError>> {
+  let response: Response | null = null;
   try {
-    const response = await fetch(url, options);
+    response = await fetch(url, options);
 
     if (!response.ok) {
-      return failure(
-        new NetworkError(
-          `HTTP error! status: ${response.status}`,
-          response.status,
-        ),
-      );
+      const status = response.status;
+      await consumeErrorResponse(response);
+      response = null;
+
+      return failure(new NetworkError(`HTTP error! status: ${status}`, status));
     }
 
     const data = await response.json();
+    const result = processSuccessResponse(response, data);
+    response = null;
 
-    return success({
-      data,
-      status: response.status,
-    });
+    return success(result);
   } catch (err) {
-    logError(`Failed to fetch from ${url}:`, err);
-
-    if (err instanceof TypeError && err.message.includes("JSON")) {
-      return failure(new NetworkError("Invalid JSON response", 0));
-    }
-
-    return failure(
-      new NetworkError(
-        err instanceof Error ? err.message : "Network request failed",
-      ),
-    );
+    response = null;
+    return failure(createNetworkError(err, url));
   }
 }
 
