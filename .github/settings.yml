@@ -7,11 +7,12 @@ branches:
         required_approving_review_count: 1
         dismiss_stale_reviews: true
         require_code_owner_reviews: true
-        required_reviewers: 1
       enforce_admins: true
       required_status_checks:
         strict: true
-        contexts: []
+        contexts:
+          - "docker-build-push-job"
+          - "pre-commit-job"
       restrictions:
         apps:
           - "semantic-release"
