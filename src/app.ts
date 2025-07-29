@@ -1,6 +1,6 @@
 import { type Config, loadConfig } from "config/config.ts";
 import { startHealthServer } from "src/service/health.ts";
-import { monitorChain } from "src/service/monitor.ts";
+import { startMonitoring } from "src/service/monitor.ts";
 import { ConfigurationError } from "src/types/result.ts";
 import { logger } from "src/utils/logger.ts";
 
@@ -12,7 +12,7 @@ async function monitorBlockchain(
   signal: AbortSignal,
 ): Promise<void> {
   try {
-    await monitorChain(config, undefined, signal);
+    await startMonitoring(config, undefined, signal);
   } catch (err) {
     logger.error("Error in monitoring the chain:", err);
     throw err;

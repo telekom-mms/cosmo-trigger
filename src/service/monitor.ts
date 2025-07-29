@@ -31,9 +31,6 @@ function createSignalAwareDelay(
   });
 }
 
-// Module-level state to persist across recursive calls
-const globalState = new MonitorState();
-
 // The default dependencies use the actual production functions.
 const defaultDependencies = {
   getChainIdentity: cosmos.getChainIdentity,
@@ -42,6 +39,7 @@ const defaultDependencies = {
   triggerUpdatePipeline: gitlab.triggerGitlabUpdatePipeline,
   setTimeout: globalThis.setTimeout.bind(globalThis),
   delay: createSignalAwareDelay,
+  state: new MonitorState(),
 };
 
 /**
@@ -209,134 +207,79 @@ export async function handleUpgradeExecution(
 }
 
 /**
- * Executes a single monitoring cycle with proper cleanup.
+ * Starts the iterative monitoring loop.
+ * Continuously monitors the blockchain until aborted.
  *
  * @param config - The application configuration.
  * @param deps - Dependencies for external calls.
- * @param cleanup - Cleanup function to call when done.
- * @param resolve - Promise resolve function to call when complete.
  * @param signal - Optional AbortSignal for graceful shutdown.
  */
-async function executeMonitoringCycle(
+export async function startMonitoring(
   config: Config,
-  deps: typeof defaultDependencies,
-  cleanup: () => void,
-  resolve: () => void,
+  deps = defaultDependencies,
   signal?: AbortSignal,
 ): Promise<void> {
-  try {
-    if (!signal?.aborted) {
-      await monitorChain(config, deps, signal);
+  while (!signal?.aborted) {
+    try {
+      const delay = await monitorChain(config, deps, signal);
+      if (delay !== null) {
+        await deps.delay(delay, signal);
+      }
+    } catch (err) {
+      logger.error(`Monitor loop error: ${err}`);
+      await deps.delay(ERROR_RETRY_INTERVAL_MS, signal);
     }
-  } finally {
-    cleanup();
-    resolve();
   }
 }
 
 /**
- * Creates a scheduler function for recursive monitoring calls.
- * Handles abort signal cleanup and resource management.
- *
- * @param config - The application configuration.
- * @param deps - Dependencies for external calls.
- * @param signal - Optional AbortSignal for graceful shutdown.
- * @returns Function to schedule next monitoring cycle.
- */
-export function createMonitorScheduler(
-  config: Config,
-  deps: typeof defaultDependencies,
-  signal?: AbortSignal,
-): (delay: number) => Promise<void> {
-  return function scheduleNextMonitor(delay: number): Promise<void> {
-    if (signal?.aborted) return Promise.resolve();
-
-    return new Promise((resolve) => {
-      let timeoutId: number | null = null;
-      let abortListener: (() => void) | null = null;
-
-      const cleanup = () => {
-        if (timeoutId !== null) {
-          clearTimeout(timeoutId);
-        }
-        if (abortListener && signal) {
-          signal.removeEventListener("abort", abortListener);
-        }
-      };
-
-      const executeNextMonitor = () =>
-        executeMonitoringCycle(config, deps, cleanup, resolve, signal);
-
-      timeoutId = deps.setTimeout(executeNextMonitor, delay);
-
-      if (signal) {
-        abortListener = () => {
-          cleanup();
-          resolve();
-        };
-        signal.addEventListener("abort", abortListener);
-      }
-    });
-  };
-}
-
-/**
- * Monitors the blockchain for block height and upgrade plans.
+ * Executes a single monitoring cycle and returns the delay for the next cycle.
  * Dependencies are injected to allow for mocking in tests.
  *
  * @param config - The application configuration.
  * @param deps - Dependencies object containing external functions.
  * @param signal - Optional AbortSignal for graceful shutdown.
+ * @returns The delay in milliseconds for the next monitoring cycle, or null if aborted.
  */
 export async function monitorChain(
   config: Config,
   deps = defaultDependencies,
   signal?: AbortSignal,
-): Promise<void> {
-  if (signal?.aborted) return;
+): Promise<number | null> {
+  if (signal?.aborted) return null;
 
-  const state = globalState;
-  const scheduleNextMonitor = createMonitorScheduler(config, deps, signal);
+  const state = deps.state;
 
-  try {
-    const chainIdentity = await ensureChainIdentity(config, state, deps);
-    if (chainIdentity === null) {
-      await scheduleNextMonitor(LONG_POLL_INTERVAL_MS);
-      return;
-    }
-
-    const { currentHeight, shouldWait } = await checkNodeLiveness(
-      config,
-      state,
-      deps,
-    );
-    if (shouldWait) {
-      await scheduleNextMonitor(LONG_POLL_INTERVAL_MS);
-      return;
-    }
-
-    await detectUpgradePlan(config, state, deps);
-
-    if (!state.upgradePlanBlockHeight) {
-      await scheduleNextMonitor(config.pollIntervalMs);
-      return;
-    }
-
-    const { executed } = await handleUpgradeExecution(
-      config,
-      state,
-      deps,
-      currentHeight!,
-      signal,
-    );
-    if (executed) {
-      await scheduleNextMonitor(config.pollIntervalMs);
-      return;
-    }
-
-    await scheduleNextMonitor(config.pollIntervalMs);
-  } catch (err) {
-    logger.error(`Monitor loop error: ${err}`);
-    await scheduleNextMonitor(ERROR_RETRY_INTERVAL_MS);
+  const chainIdentity = await ensureChainIdentity(config, state, deps);
+  if (chainIdentity === null) {
+    return LONG_POLL_INTERVAL_MS;
   }
+
+  const { currentHeight, shouldWait } = await checkNodeLiveness(
+    config,
+    state,
+    deps,
+  );
+  if (shouldWait) {
+    return LONG_POLL_INTERVAL_MS;
+  }
+
+  await detectUpgradePlan(config, state, deps);
+
+  if (!state.upgradePlanBlockHeight) {
+    return config.pollIntervalMs;
+  }
+
+  const { executed } = await handleUpgradeExecution(
+    config,
+    state,
+    deps,
+    currentHeight!,
+    signal,
+  );
+  if (executed) {
+    return config.pollIntervalMs;
+  }
+
+  return config.pollIntervalMs;
 }
