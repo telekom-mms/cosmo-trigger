@@ -21,8 +21,10 @@ repos:
       - id: "check-shebang-scripts-are-executable"
       - id: "detect-private-key"
       - id: "end-of-file-fixer"
+        exclude: "^img/"
       - id: "mixed-line-ending"
       - id: "trailing-whitespace"
+        exclude: "^img/"
   - repo: https://github.com/nozaq/pre-commit-deno
     rev: 0.1.0
     hooks:
