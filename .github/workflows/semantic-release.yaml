@@ -37,14 +37,9 @@ jobs:
         with:
           node-version: "23"
 
-      - name: "Install jq"
-        run: "sudo apt-get update && sudo apt-get install -y jq"
-
       - name: "Install semantic-release"
         run: >
           yarn add semantic-release
-          @semantic-release/exec
-          @semantic-release/git
           conventional-changelog-conventionalcommits
 
       - name: "Run Semantic Release"
