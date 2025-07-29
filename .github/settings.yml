@@ -27,7 +27,7 @@ repository:
   homepage: "https://geschaeftskunden.telekom.de/digitale-loesungen/infrastructure-as-a-service/staking-en"
   # Either `true` to make the repository private, or `false` to make it public.
   # TODO: Change to false when the repository is public
-  private: true
+  private: false
   # Either `true` to allow squash-merging pull requests, or `false` to prevent
   # squash-merging.
   allow_squash_merge: true
