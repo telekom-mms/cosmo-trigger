@@ -6,6 +6,9 @@
 
 **Note: CosmoTrigger currently only works for Gitlab pipelines.**
 
+**Note: CosmoTrigger only supports Cosmos-SDK based networks
+which implement the [upgrade module](https://docs.cosmos.network/v0.53/build/modules/upgrade#plan).**
+
 ## Overview
 
 CosmoTrigger is a Deno-based monitoring tool designed to track upcoming
