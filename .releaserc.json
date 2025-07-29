@@ -69,21 +69,6 @@
         }
       }
     ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "jq '.version = \"${nextRelease.gitTag}\"' deno.json > deno.json.tmp && mv deno.json.tmp deno.json"
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "deno.json"
-        ],
-        "message": "chore(release): ${nextRelease.gitTag} [skip ci]\n\n${nextRelease.notes}"
-      }
-    ],
     "@semantic-release/github"
   ]
 }
