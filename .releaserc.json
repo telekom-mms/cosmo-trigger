@@ -51,21 +51,6 @@
               "type": "build"
             }
           ]
-        },
-        "writerOpts": {
-          "commitGroupsSort": "title",
-          "commitsSort": [
-            "subject",
-            "scope"
-          ],
-          "mainTemplate": "{{> header}}{{#each commitGroups}}{{> commit-group}}{{/each}}{{#each noteGroups}}{{> note-group}}{{/each}}{{> footer}}---\n\n\ud83d\udc33 **Docker Images**: Docker images for this release are available in the [GitHub Container Registry](https://github.com/telekom-mms/cosmo-trigger/pkgs/container/cosmo-trigger).",
-          "noteGroupsSort": "title",
-          "notesSort": "text",
-          "transform": {
-            "notes": {
-              "title": "\ud83d\udca5 Breaking Changes"
-            }
-          }
         }
       }
     ],
