@@ -3,18 +3,23 @@ name: "Release Binaries"
 
 # yamllint disable-line rule:truthy
 on:
-  release:
-    types: ["created"]
+  workflow_run:
+    workflows: ["Semantic Release"]
+    types: ["completed"]
+    branches: ["main"]
 
 jobs:
   build:
+    # Only run if the semantic-release workflow succeeded
+    if: "${{ github.event.workflow_run.conclusion == 'success' }}"
     permissions:
-      # To be able to upload release assets
       contents: "write"
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout repository"
         uses: "actions/checkout@v4"
+        with:
+          ref: "${{ github.event.workflow_run.head_sha }}"
 
       - name: "Setup Deno"
         uses: "denoland/setup-deno@v2"
@@ -35,6 +40,7 @@ jobs:
 
   upload:
     needs: "build"
+    if: "${{ github.event.workflow_run.conclusion == 'success' }}"
     permissions:
       contents: "write"
     runs-on: "ubuntu-latest"
@@ -58,14 +64,26 @@ jobs:
           name: "binaries"
           path: "./dist"
 
+      - name: "Get latest release"
+        id: "get_release"
+        uses: "actions/github-script@v7"
+        with:
+          script: |
+            const release = await github.rest.repos.getLatestRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            return release.data;
+
       - name: "Upload ${{ matrix.platform }} binary"
         uses: "actions/upload-release-asset@v1"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        # yamllint disable rule:line-length
         with:
-          upload_url: "${{ github.event.release.upload_url }}"
-          asset_path: "./dist/cosmo-trigger-${{ matrix.platform }}"
-          # yamllint disable-line rule:line-length
+          upload_url: "${{ fromJSON(steps.get_release.outputs.result).upload_url }}"
+          asset_path: "./dist/cosmo-trigger-${{ matrix.platform }}${{ matrix.extension }}"
           asset_name: "cosmo-trigger-${{ matrix.platform }}${{ matrix.extension }}"
+          # yamllint enable rule:line-length
           asset_content_type: "application/octet-stream"
 ...
