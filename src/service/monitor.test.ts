@@ -1,6 +1,7 @@
 import { type Config } from "config/config.ts";
 import {
   checkNodeLiveness,
+  createSignalAwareDelay,
   detectUpgradePlan,
   ensureChainIdentity,
   handleUpgradeExecution,
@@ -10,6 +11,8 @@ import {
 import { ChainIdentity } from "src/types/chain-identity.ts";
 import { MonitorState } from "src/types/monitor.ts";
 import { assertEquals } from "test-assert";
+import { spy } from "test-mock";
+import { FakeTime } from "test-time";
 
 const MONITOR_ENV_KEYS = ["COSMOS_NODE_REST_URL", "POLL_INTERVAL_MS"];
 
@@ -745,5 +748,115 @@ Deno.test(
     assertEquals(state.upgradePlanBlockHeight, 15000);
     assertEquals(state.chainIdentity, identity);
     assertEquals(state.isCosmosNodeDown, true);
+  },
+);
+
+Deno.test(
+  "createSignalAwareDelay should resolve after timeout and remove event listener",
+  async () => {
+    using _time = new FakeTime();
+
+    const signal = new AbortController().signal;
+
+
+    const addEventListenerSpy = spy(signal, "addEventListener");
+    const removeEventListenerSpy = spy(signal, "removeEventListener");
+
+    const delayPromise = createSignalAwareDelay(1000, signal);
+
+    assertEquals(addEventListenerSpy.calls.length, 1);
+    assertEquals(addEventListenerSpy.calls[0].args[0], "abort");
+
+    _time.tick(1000);
+    await delayPromise;
+
+    assertEquals(removeEventListenerSpy.calls.length, 1);
+    assertEquals(removeEventListenerSpy.calls[0].args[0], "abort");
+    assertEquals(
+      removeEventListenerSpy.calls[0].args[1],
+      addEventListenerSpy.calls[0].args[1],
+    );
+  },
+);
+
+Deno.test(
+  "createSignalAwareDelay should resolve immediately when signal already aborted",
+  async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const addEventListenerSpy = spy(controller.signal, "addEventListener");
+    const removeEventListenerSpy = spy(
+      controller.signal,
+      "removeEventListener",
+    );
+
+    const startTime = Date.now();
+    await createSignalAwareDelay(1000, controller.signal);
+    const endTime = Date.now();
+
+    assertEquals(endTime - startTime < 50, true);
+    assertEquals(addEventListenerSpy.calls.length, 0);
+    assertEquals(removeEventListenerSpy.calls.length, 0);
+  },
+);
+
+Deno.test(
+  "createSignalAwareDelay should resolve on abort and remove event listener",
+  async () => {
+    using _time = new FakeTime();
+
+    const controller = new AbortController();
+    const addEventListenerSpy = spy(controller.signal, "addEventListener");
+    const removeEventListenerSpy = spy(
+      controller.signal,
+      "removeEventListener",
+    );
+
+    const delayPromise = createSignalAwareDelay(1000, controller.signal);
+
+    assertEquals(addEventListenerSpy.calls.length, 1);
+    assertEquals(addEventListenerSpy.calls[0].args[0], "abort");
+
+    _time.tick(500);
+    controller.abort();
+
+    await delayPromise;
+
+    assertEquals(removeEventListenerSpy.calls.length, 1);
+    assertEquals(removeEventListenerSpy.calls[0].args[0], "abort");
+    assertEquals(
+      removeEventListenerSpy.calls[0].args[1],
+      addEventListenerSpy.calls[0].args[1],
+    );
+  },
+);
+
+Deno.test(
+  "createSignalAwareDelay should work without signal parameter",
+  async () => {
+    using _time = new FakeTime();
+
+    const delayPromise = createSignalAwareDelay(500);
+
+    _time.tick(500);
+    await delayPromise;
+  },
+);
+
+Deno.test(
+  "createSignalAwareDelay should cleanup timeout on abort",
+  async () => {
+    using _time = new FakeTime();
+
+    const controller = new AbortController();
+    const delayPromise = createSignalAwareDelay(1000, controller.signal);
+
+    _time.tick(500);
+    controller.abort();
+
+    await delayPromise;
+
+    _time.tick(1000);
   },
 );

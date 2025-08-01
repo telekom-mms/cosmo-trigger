@@ -16,18 +16,29 @@ const ERROR_RETRY_INTERVAL_MS = 5_000;
  * @param signal - Optional AbortSignal for early termination
  * @returns Promise that resolves after delay or immediately if aborted
  */
-function createSignalAwareDelay(
+export function createSignalAwareDelay(
   ms: number,
   signal?: AbortSignal,
 ): Promise<void> {
   if (signal?.aborted) return Promise.resolve();
 
   return new Promise<void>((resolve) => {
-    const timeoutId = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timeoutId);
+    const timeoutId = setTimeout(() => {
+      cleanup();
       resolve();
-    });
+    }, ms);
+
+    const abortHandler = () => {
+      cleanup();
+      resolve();
+    };
+
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abortHandler);
+    };
+
+    signal?.addEventListener("abort", abortHandler);
   });
 }
 
