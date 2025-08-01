@@ -46,7 +46,7 @@ provided through system environment variables or a local `.env` file.
 | `COSMOS_NODE_REST_URL`         | REST URL of the Cosmos node                          | (Required)     |
 | `CICD_TRIGGER_TOKEN`           | GitLab CI/CD trigger token (see [Gitlab documentation](https://docs.gitlab.com/ci/triggers/#create-a-pipeline-trigger-token) for more information)                                 | (Required)     |
 | `CICD_PERSONAL_ACCESS_TOKEN`   | GitLab personal access token                         | (Required)     |
-| `CICD_REPOSITORY_BRANCH`       | GitLab branch to trigger the pipeline on             | (Required)     |
+| `CICD_UPDATE_BRANCH`           | GitLab update branch to trigger the pipeline on (e.g. `feature/all-dependencies`)             | (Required)     |
 | `CICD_PROJECT_API_URL`         | GitLab project API URL                               | (Required)     |
 | `CICD_VARIABLES`               | JSON string of additional pipeline variables         | `""`           |
 <!-- markdownlint-enable MD013 -->
@@ -161,7 +161,7 @@ docker run -d \
   -e COSMOS_NODE_REST_URL=http://localhost:1317 \
   -e CICD_TRIGGER_TOKEN=your-trigger-token \
   -e CICD_PERSONAL_ACCESS_TOKEN=your-personal-access-token \
-  -e CICD_REPOSITORY_BRANCH=main \
+  -e CICD_UPDATE_BRANCH=main \
   -e CICD_PROJECT_API_URL=https://gitlab.example.com/api/v4/projects/1234 \
   cosmo-trigger:latest
 ```

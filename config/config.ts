@@ -7,7 +7,7 @@ export interface Config {
   cosmosNodeRestUrl: string;
   cicdTriggerToken: string;
   cicdPersonalAccessToken: string;
-  cicdRepositoryBranch: string;
+  cicdUpdateBranch: string;
   cicdProjectApiUrl: string;
   cicdVariables: string;
 }
@@ -16,7 +16,7 @@ const REQUIRED_KEYS: ReadonlyArray<keyof Config> = [
   "cosmosNodeRestUrl",
   "cicdTriggerToken",
   "cicdPersonalAccessToken",
-  "cicdRepositoryBranch",
+  "cicdUpdateBranch",
   "cicdProjectApiUrl",
 ];
 
@@ -24,7 +24,7 @@ const ENV_VAR_MAPPING: Record<keyof Config, string> = {
   cosmosNodeRestUrl: "COSMOS_NODE_REST_URL",
   cicdTriggerToken: "CICD_TRIGGER_TOKEN",
   cicdPersonalAccessToken: "CICD_PERSONAL_ACCESS_TOKEN",
-  cicdRepositoryBranch: "CICD_REPOSITORY_BRANCH",
+  cicdUpdateBranch: "CICD_UPDATE_BRANCH",
   cicdProjectApiUrl: "CICD_PROJECT_API_URL",
   applicationPort: "APPLICATION_PORT",
   pollIntervalMs: "POLL_INTERVAL_MS",
@@ -68,7 +68,7 @@ export async function loadConfig(): Promise<Config> {
     cosmosNodeRestUrl: Deno.env.get("COSMOS_NODE_REST_URL") ?? "",
     cicdTriggerToken: Deno.env.get("CICD_TRIGGER_TOKEN") ?? "",
     cicdPersonalAccessToken: Deno.env.get("CICD_PERSONAL_ACCESS_TOKEN") ?? "",
-    cicdRepositoryBranch: Deno.env.get("CICD_REPOSITORY_BRANCH") ?? "",
+    cicdUpdateBranch: Deno.env.get("CICD_UPDATE_BRANCH") ?? "",
     cicdProjectApiUrl: Deno.env.get("CICD_PROJECT_API_URL") ?? "",
     cicdVariables: Deno.env.get("CICD_VARIABLES") ?? "",
   };

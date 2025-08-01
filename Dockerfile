@@ -43,9 +43,9 @@ ENV COSMOS_NODE_REST_URL=""
 # - CICD_PERSONAL_ACCESS_TOKEN: Must be provided via K8s Secret at runtime
 # These are intentionally NOT set in Dockerfile for security compliance.
 
-# Matches Deno code: Deno.env.get("CICD_REPOSITORY_BRANCH") ?? ""
+# Matches Deno code: Deno.env.get("CICD_UPDATE_BRANCH") ?? ""
 # Consider changing Deno code's default if "main" or similar is always preferred.
-ENV CICD_REPOSITORY_BRANCH=""
+ENV CICD_UPDATE_BRANCH=""
 
 # Matches Deno code: Deno.env.get("CICD_PROJECT_API_URL") ?? ""
 ENV CICD_PROJECT_API_URL=""
