@@ -50,7 +50,7 @@ function createMockConfig(): Config {
     cosmosNodeRestUrl: "http://localhost:1317",
     cicdTriggerToken: "test-token",
     cicdPersonalAccessToken: "test-pat",
-    cicdRepositoryBranch: "main",
+    cicdUpdateBranch: "main",
     cicdProjectApiUrl: "https://gitlab.example.com/api/v4/projects/1234",
     cicdVariables: "",
   };

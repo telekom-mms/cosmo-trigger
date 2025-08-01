@@ -13,7 +13,7 @@ Deno.test(
       cosmosNodeRestUrl: "http://localhost:1317",
       cicdTriggerToken: "test-token",
       cicdPersonalAccessToken: "test-pat",
-      cicdRepositoryBranch: "main",
+      cicdUpdateBranch: "main",
       cicdProjectApiUrl: "https://gitlab.example.com/api/v4/projects/1234",
       cicdVariables: JSON.stringify({
         PROVIDER: "aws",
@@ -43,7 +43,7 @@ Deno.test(
       cosmosNodeRestUrl: "http://localhost:1317",
       cicdTriggerToken: "test-token",
       cicdPersonalAccessToken: "test-pat",
-      cicdRepositoryBranch: "main",
+      cicdUpdateBranch: "main",
       cicdProjectApiUrl: "https://gitlab.example.com/api/v4/projects/1234",
       cicdVariables: "",
     };
@@ -66,7 +66,7 @@ Deno.test(
       cosmosNodeRestUrl: "http://localhost:1317",
       cicdTriggerToken: "test-token",
       cicdPersonalAccessToken: "test-pat",
-      cicdRepositoryBranch: "main",
+      cicdUpdateBranch: "main",
       cicdProjectApiUrl: "https://gitlab.example.com/api/v4/projects/1234",
       cicdVariables: "{ 'key': 'value' }", // Invalid JSON uses single quotes.
     };
