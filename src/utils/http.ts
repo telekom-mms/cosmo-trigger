@@ -3,13 +3,30 @@ import { logError } from "src/utils/logger.ts";
 import { HttpResponse } from "src/types/http.ts";
 
 /**
- * Consumes error response body to free resources.
+ * Consumes response body completely to free resources and prevent memory leaks.
+ * This ensures proper cleanup of response streams and associated resources.
  *
  * @param response - The HTTP response to consume.
  */
-async function consumeErrorResponse(response: Response): Promise<void> {
+async function consumeResponseBody(response: Response): Promise<void> {
   try {
-    await response.text();
+    if (response.bodyUsed) {
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (reader) {
+      try {
+        while (true) {
+          const { done } = await reader.read();
+          if (done) break;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } else {
+      await response.text();
+    }
   } catch {
     // Ignore consumption errors
   }
@@ -28,7 +45,10 @@ function processSuccessResponse<T>(
   data: T,
 ): HttpResponse<T> {
   const status = response.status;
-  return { data, status };
+
+  const result: HttpResponse<T> = { data, status };
+
+  return result;
 }
 
 /**
@@ -71,26 +91,30 @@ export async function fetchJson<T>(
   url: string,
   options?: RequestInit,
 ): Promise<Result<HttpResponse<T>, NetworkError>> {
-  let response: Response | null = null;
+  let response: Response | undefined;
   try {
     response = await fetch(url, options);
 
     if (!response.ok) {
       const status = response.status;
-      await consumeErrorResponse(response);
-      response = null;
+      await consumeResponseBody(response);
 
       return failure(new NetworkError(`HTTP error! status: ${status}`, status));
     }
 
     const data = await response.json();
+
     const result = processSuccessResponse(response, data);
-    response = null;
 
     return success(result);
   } catch (err) {
-    response = null;
+    if (response && !response.bodyUsed) {
+      await consumeResponseBody(response);
+    }
+
     return failure(createNetworkError(err, url));
+  } finally {
+    response = undefined;
   }
 }
 

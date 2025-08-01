@@ -23,8 +23,6 @@ export async function getBlockHeight(apiUrl: string): Promise<number | null> {
     "height",
   ]);
 
-  (result.data as { data: unknown }).data = null;
-
   if (!heightStr) {
     return null;
   }
@@ -51,8 +49,6 @@ export async function getUpgradePlanBlockHeight(
   }
 
   const planHeight = safeGet<string>(result.data.data, ["plan", "height"]);
-
-  (result.data as { data: unknown }).data = null;
 
   if (!planHeight) {
     return null;
@@ -83,7 +79,6 @@ export async function getChainIdentity(
     "default_node_info",
   ]);
   if (!nodeInfo) {
-    (result.data as { data: unknown }).data = null;
     return null;
   }
 
@@ -94,8 +89,6 @@ export async function getChainIdentity(
   const moniker = safeGet<string>(nodeInfo, ["moniker"]) || "";
   const other = safeGet<Record<string, unknown>>(nodeInfo, ["other"]);
   const rpcAddress = other ? safeGet<string>(other, ["rpc_address"]) || "" : "";
-
-  (result.data as { data: unknown }).data = null;
 
   if (!moniker || !network) {
     return null;
