@@ -30,7 +30,7 @@ function createPipelineTriggerBody(config: Config): URLSearchParams {
   const cicdVariables = parseCicdVariables(config);
   return new URLSearchParams({
     token: config.cicdTriggerToken,
-    ref: config.cicdRepositoryBranch,
+    ref: config.cicdUpdateBranch,
     ...cicdVariables,
   });
 }
