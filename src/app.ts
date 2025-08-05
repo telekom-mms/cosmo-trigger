@@ -1,6 +1,6 @@
 import { type Config, loadConfig } from "config/config.ts";
 import { startHealthServer } from "src/service/health.ts";
-import { startMonitoring } from "src/service/monitor.ts";
+import { CosmosMonitor } from "src/service/monitor.ts";
 import { ConfigurationError } from "src/types/result.ts";
 import { logger } from "src/utils/logger.ts";
 
@@ -11,11 +11,14 @@ async function monitorBlockchain(
   config: Config,
   signal: AbortSignal,
 ): Promise<void> {
+  const monitor = new CosmosMonitor(config);
   try {
-    await startMonitoring(config, undefined, signal);
+    await monitor.startMonitoring(signal);
   } catch (err) {
     logger.error("Error in monitoring the chain:", err);
     throw err;
+  } finally {
+    monitor.reset();
   }
 }
 
