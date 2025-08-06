@@ -8,8 +8,6 @@ on:
 
 jobs:
   build:
-    # Only run for non-draft, non-prerelease releases
-    if: "${{ !github.event.release.draft && !github.event.release.prerelease }}"
     permissions:
       contents: "write"
     runs-on: "ubuntu-latest"
@@ -38,7 +36,6 @@ jobs:
 
   upload:
     needs: "build"
-    if: "${{ !github.event.release.draft && !github.event.release.prerelease }}"
     permissions:
       contents: "write"
     runs-on: "ubuntu-latest"
