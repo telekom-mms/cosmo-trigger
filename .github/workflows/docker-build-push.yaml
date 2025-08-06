@@ -12,10 +12,6 @@ on:
       - "hotfix/*"
     tags:
       - "v*.*.*"
-  workflow_run:
-    workflows: ["Semantic Release"]
-    types: ["completed"]
-    branches: ["main"]
 
 env:
   REGISTRY: "ghcr.io"
