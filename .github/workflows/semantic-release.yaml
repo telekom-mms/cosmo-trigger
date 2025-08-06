@@ -19,6 +19,8 @@ jobs:
       issues: "write"
       # To be able to comment on released pull requests
       pull-requests: "write"
+      # To be able to create actions
+      actions: "write"
     runs-on: "ubuntu-latest"
     steps:
       - name: "Checkout repository"
