@@ -20,7 +20,7 @@ jobs:
       - name: "Setup Deno"
         uses: "denoland/setup-deno@v2"
         with:
-          deno-version: "v2.4.2"
+          deno-version: "2.5.4"
 
       - name: "Cache dependencies"
         run: "deno cache src/app.ts"
