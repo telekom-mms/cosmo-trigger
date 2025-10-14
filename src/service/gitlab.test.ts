@@ -240,8 +240,14 @@ Deno.test(
 
     try {
       // Mock setTimeout to execute immediately
-      globalThis.setTimeout = (fn: () => void) => {
-        fn();
+      globalThis.setTimeout = (
+        fn: string | ((...args: unknown[]) => void),
+        _delay?: number,
+        ..._args: unknown[]
+      ): number => {
+        if (typeof fn === "function") {
+          fn();
+        }
         return 0;
       };
 
