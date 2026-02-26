@@ -29,7 +29,7 @@ jobs:
         run: "deno task build:all"
 
       - name: "Upload binaries"
-        uses: "actions/upload-artifact@v4"
+        uses: "actions/upload-artifact@v7"
         with:
           name: "binaries"
           path: "./dist/*"
@@ -54,7 +54,7 @@ jobs:
             extension: ".exe"
     steps:
       - name: "Download binaries"
-        uses: "actions/download-artifact@v5"
+        uses: "actions/download-artifact@v8"
         with:
           name: "binaries"
           path: "./dist"
