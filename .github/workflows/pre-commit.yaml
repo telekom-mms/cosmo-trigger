@@ -29,7 +29,7 @@ jobs:
       - name: "Install python dependencies"
         run: "pip install -r requirements.txt"
       - name: "Set up pre-commit cache"
-        uses: "actions/cache@v4"
+        uses: "actions/cache@v6"
         with:
           path: "~/.cache/pre-commit"
           # yamllint disable-line rule:line-length
