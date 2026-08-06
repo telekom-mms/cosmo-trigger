@@ -20,7 +20,7 @@ jobs:
       - name: "Set up python and pip cache"
         uses: "actions/setup-python@v6"
         with:
-          python-version: "3.14.0"
+          python-version: "3.14.7"
           cache: "pip"
       - name: "Set up Deno"
         uses: "denoland/setup-deno@v2"
